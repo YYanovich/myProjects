@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Calendar</title>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="callBackg">
+            <h1 class="callM"></h1>
+            <h2 class="callY"></h2>
+            <img src="" alt="" class="previous">
+            <img src="" alt="" class="next">
+            <div class="week-days">
+                <span>пн</span>
+                <span>вт</span>
+                <span>ср</span>
+                <span>чт</span>
+                <span>пт</span>
+                <span>сб</span>
+                <span>нд</span>
+            </div>
+            <button class="right">►</button>
+            <button class="left">◄</button>
+            <div class="calendar-grid"></div>
+        </div>
+    </div>
+    <script>
+        let currentTime = new Date()
+        let currentYear = currentTime.getFullYear()
+        let currentMonth = currentTime.getMonth() + 1
+        let currentDay = currentTime.getDate()
+        let callM = document.querySelector('.callM')
+        let callY = document.querySelector('.callY')
+        let calendarGrid = document.querySelector('.calendar-grid')
+        let left = document.querySelector('.left')
+        let right = document.querySelector('.right')
+        let monthObj = {
+             '1': 'Січень',
+             '2': 'Лютий',
+             '3': 'Березень',
+             '4': 'Квітень',
+             '5': 'Травень',
+             '6': 'Червень',
+             '7': 'Липень',
+             '8': 'Серпень',
+             '9': 'Вересень',
+             '10': 'Жовтень',
+             '11': 'Листопад',
+             '12': 'Грудень'
+            }
+        let dayNames = ['нд', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб']
+        let fullYear = {}
+        let startYear = 1900
+        let endYear = 2200
+        for(let year = startYear; year <= endYear; year++) {
+            fullYear[year] = {}
+            for(let month = 1; month <= 12; month++) {
+                fullYear[year][month] = {
+                    monthName: monthObj[month],
+                    days: [],
+                    weekDays: []
+                }
+                for(let day = 1; day <= 31; day++) {
+                    let date = new Date(year, month-1, day)
+                    if(date.getMonth() !== month-1) {
+                        break
+                    }
+                    fullYear[year][month].days.push({
+                        number: day,
+                        weekday: dayNames[date.getDay()]
+                    })
+                }
+            }
+        }
+        function renderCalendar() {
+        callM.textContent = monthObj[currentMonth]
+        callY.textContent = currentYear
+        calendarGrid.innerHTML = ''
+        let firstDay = new Date(currentYear, currentMonth - 1, 1)
+        let startOfset = firstDay.getDay() == 0 ? 6 : firstDay.getDay() - 1
+        for (let i = 0; i < startOfset; i++) {
+            let emptyCell = document.createElement('span')
+            calendarGrid.appendChild(emptyCell)
+         }
+         let daysArray = fullYear[currentYear][currentMonth].days
+         daysArray.forEach((dayObj) => {
+            let dayCell = document.createElement('span')
+            dayCell.textContent = dayObj.number
+            calendarGrid.appendChild(dayCell)
+            dayCell.textContent = dayObj.number
+            if (dayObj.number === currentDay && currentMonth === currentTime.getMonth() + 1 && currentYear === currentTime.getFullYear()) {
+                dayCell.classList.add('today')
+            }
+         })
+        }
+        renderCalendar()
+
+        left.addEventListener('click', () => {
+            currentMonth--
+             if(currentMonth < 1) {
+                 currentMonth = 12
+                 currentYear--
+             }
+           renderCalendar() 
+         })
+         right.addEventListener('click', () => {
+            currentMonth++
+             if(currentMonth > 12) {
+                 currentMonth = 1
+                 currentYear++
+             }
+           renderCalendar() 
+         })
+    </script>
+</body>
+</html>

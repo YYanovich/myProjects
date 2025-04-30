@@ -1,0 +1,79 @@
+.wrapper{
+    background-color: #fff;
+    color: #fff;
+}
+.callBackg{
+    background-color: black;
+    display: flex;
+    justify-self: center;
+    width: 16rem;
+    height: 15rem;
+    border-radius: 1.5rem;
+    margin-top: 20rem;
+}
+.callM{
+    color: #fff;
+    margin-left: 1.5rem;
+    max-height: 1.5rem;
+    max-width: 0.1rem;
+    font-size: 1.5rem;
+    margin-top: 1.6rem;
+}
+.callY{
+    color: #fff;
+    margin-left: 7.5rem;
+    min-height: 1.5rem;
+    width: 0.2rem;
+    margin-top: 1.7rem;
+}
+.week-days{
+    margin-top: 4rem;
+    min-width: 11.8rem;
+    min-height: 2rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.2rem;
+    margin-left: -7.3rem;
+}
+.calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.2rem;
+        margin-top: 5rem;
+        margin-left: -12.2rem;
+        max-width: 8rem;
+        max-height: 5rem;
+}
+.calendar-grid span {
+    text-align: center;
+    padding: 5px;
+    border-radius: 4px;
+}
+.left, .right {
+    background: none;
+    border: none;    
+    color: #fff;     
+    font-size: 1rem; 
+    cursor: pointer;  
+    position: absolute;
+    margin-top: 2rem;
+}
+
+.left {
+    margin-left: 12.5rem;
+}
+
+.right {
+    margin-left: 13.7rem;
+}
+.today {
+    border: 1px solid #fff;
+    border-radius: 50%; /* ← точно круг */
+    background-color: transparent;
+    width: 1rem;
+    height: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+}
