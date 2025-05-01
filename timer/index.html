@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="wrapper">
+        <div class="stopwatch_container">
+            <p class="stopwatch">00</p>
+            <div class="stopwatches">
+            </div>
+            <button class="start">Start</button>
+            <button class="stop">Stop</button>
+            <button class="lap">Lap</button>
+            <button class="reset">Reset</button>
+        </div>
+    </div>
+    <script>
+        let stopwatches = document.querySelector('.stopwatches')
+        let stopwatch = document.querySelector('.stopwatch')
+        let startButton = document.querySelector('.start')
+        let lapButton = document.querySelector('.lap')
+        let stopButton = document.querySelector('.stop')
+        let resetButton = document.querySelector('.reset')
+        let seconds = 0
+        let milliseconds = 0
+        let minutes = 0
+        let timerInterval
+        stopwatch.textContent = '00:00,00'
+
+
+        function swatch()  {
+            let showMinutes = minutes < 10 ? '0' + minutes : minutes
+            let showSeconds = seconds < 10 ? '0' + seconds : seconds
+            let showMilliseconds = milliseconds < 10 ? '0' + milliseconds : milliseconds
+            stopwatch.textContent = `${showMinutes}:${showSeconds},${showMilliseconds}`
+        }
+
+
+            function timeInterval() {
+                if(timerInterval) {
+                    return
+                }
+                timerInterval = setInterval(() => {
+                milliseconds += 1
+                if (milliseconds === 100) {
+                    seconds += 1
+                    milliseconds = 0
+                }
+                if (seconds === 60) {
+                    minutes += 1
+                    seconds = 0
+                }
+                swatch()
+            }, 10)}
+
+
+            function stopInterval() {
+                clearInterval(timerInterval)
+            }
+
+
+            function lapInterval() {
+                let lap = document.createElement('p')
+                lap.textContent = `${minutes < 10 ? '0' + minutes : minutes}:${seconds < 10 ? '0' + seconds : seconds},${milliseconds < 10 ? '0' + milliseconds : milliseconds}`            
+                stopwatches.appendChild(lap)
+            }
+
+
+            function resetTimer() {
+                clearInterval(timerInterval);
+                stopwatches.innerHTML = '';
+                minutes = 0;
+                seconds = 0;
+                milliseconds = 0;
+                timerInterval = null;
+                swatch()
+            }
+            startButton.addEventListener('click', () => {
+                    timeInterval()               
+            })
+
+            stopButton.addEventListener('click', () => {
+                stopInterval()
+            })
+
+            lapButton.addEventListener('click', () => {
+                lapInterval()
+            })
+
+            resetButton.addEventListener('click', () => {
+                resetTimer()
+            })
+    </script>
+</body>
+</html>
