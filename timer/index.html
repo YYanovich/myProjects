@@ -1,99 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stopwatch</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <div class="wrapper">
-        <div class="stopwatch_container">
-            <p class="stopwatch">00</p>
-            <div class="stopwatches">
-            </div>
-            <button class="start">Start</button>
-            <button class="stop">Stop</button>
-            <button class="lap">Lap</button>
-            <button class="reset">Reset</button>
+      <div class="stopwatch_container">
+        <p class="stopwatch"></p>
+        <div class="stopwatch_buttons">
+          <button class="start">Start</button>
+          <button class="stop">Stop</button>
+          <button class="lap">Lap</button>
+          <button class="reset">Reset</button>
         </div>
+      </div>
+      <hr class="line" />
+      <div class="stopwatches"></div>
     </div>
     <script>
-        let stopwatches = document.querySelector('.stopwatches')
-        let stopwatch = document.querySelector('.stopwatch')
-        let startButton = document.querySelector('.start')
-        let lapButton = document.querySelector('.lap')
-        let stopButton = document.querySelector('.stop')
-        let resetButton = document.querySelector('.reset')
-        let seconds = 0
-        let milliseconds = 0
-        let minutes = 0
-        let timerInterval
-        stopwatch.textContent = '00:00,00'
+      let stopwatches = document.querySelector(".stopwatches");
+      let stopwatch = document.querySelector(".stopwatch");
+      let startButton = document.querySelector(".start");
+      let lapButton = document.querySelector(".lap");
+      let stopButton = document.querySelector(".stop");
+      let resetButton = document.querySelector(".reset");
+      let seconds = 0;
+      let milliseconds = 0;
+      let minutes = 0;
+      let timerInterval;
+      let lIntervals = [];
+      let laps = [];
 
+      stopwatch.textContent = "00:00,00";
 
-        function swatch()  {
-            let showMinutes = minutes < 10 ? '0' + minutes : minutes
-            let showSeconds = seconds < 10 ? '0' + seconds : seconds
-            let showMilliseconds = milliseconds < 10 ? '0' + milliseconds : milliseconds
-            stopwatch.textContent = `${showMinutes}:${showSeconds},${showMilliseconds}`
-        }
+      function swatch() {
+        let showMinutes = minutes < 10 ? "0" + minutes : minutes;
+        let showSeconds = seconds < 10 ? "0" + seconds : seconds;
+        let showMilliseconds =
+          milliseconds < 10 ? "0" + milliseconds : milliseconds;
+        stopwatch.textContent = `${showMinutes}:${showSeconds},${showMilliseconds}`;
+      }
 
+      function timeInterval() {
+        timerInterval = setInterval(() => {
+          milliseconds += 1;
+          if (milliseconds === 100) {
+            seconds += 1;
+            milliseconds = 0;
+          }
+          if (seconds === 60) {
+            minutes += 1;
+            seconds = 0;
+          }
+          swatch();
+        }, 10);
+      }
 
-            function timeInterval() {
-                if(timerInterval) {
-                    return
-                }
-                timerInterval = setInterval(() => {
-                milliseconds += 1
-                if (milliseconds === 100) {
-                    seconds += 1
-                    milliseconds = 0
-                }
-                if (seconds === 60) {
-                    minutes += 1
-                    seconds = 0
-                }
-                swatch()
-            }, 10)}
+      function stopInterval() {
+        lIntervals.forEach((lInterval) => clearInterval(lInterval));
+        lIntervals = [];
+      }
 
+      function lapInterval() {
+        let lap = document.createElement("p");
+        let index = laps.length + 1;
+        let lapMinutes = 0;
+        let lapSeconds = 0;
+        let lapMilliseconds = 0;
+        let elapsedLapTime = 0;
 
-            function stopInterval() {
-                clearInterval(timerInterval)
-            }
+        lap.textContent = `Lap ${index} 00:00,00`;
+        stopwatches.appendChild(lap);
+        let hr = document.createElement("hr");
+        hr.className = "line";
+        stopwatches.appendChild(hr);
 
+        let lInterval = setInterval(() => {
+          lapMilliseconds++;
+          elapsedLapTime += 10;
 
-            function lapInterval() {
-                let lap = document.createElement('p')
-                lap.textContent = `${minutes < 10 ? '0' + minutes : minutes}:${seconds < 10 ? '0' + seconds : seconds},${milliseconds < 10 ? '0' + milliseconds : milliseconds}`            
-                stopwatches.appendChild(lap)
-            }
+          if (lapMilliseconds === 100) {
+            lapSeconds++;
+            lapMilliseconds = 0;
+          }
+          if (lapSeconds === 60) {
+            lapMinutes++;
+            lapSeconds = 0;
+          }
 
+          lap.textContent = `Lap ${index} ${
+            lapMinutes < 10 ? "0" + lapMinutes : lapMinutes
+          }:${lapSeconds < 10 ? "0" + lapSeconds : lapSeconds},${
+            lapMilliseconds < 10 ? "0" + lapMilliseconds : lapMilliseconds
+          }`;
 
-            function resetTimer() {
-                clearInterval(timerInterval);
-                stopwatches.innerHTML = '';
-                minutes = 0;
-                seconds = 0;
-                milliseconds = 0;
-                timerInterval = null;
-                swatch()
-            }
-            startButton.addEventListener('click', () => {
-                    timeInterval()               
-            })
+          const lapData = laps.find((l) => l.element === lap);
+          if (lapData) {
+            lapData.time = elapsedLapTime;
+            updateFastestAndSlowestLaps();
+          }
+        }, 10);
 
-            stopButton.addEventListener('click', () => {
-                stopInterval()
-            })
+        lIntervals.push(lInterval);
+        const lapData = {
+          time: elapsedLapTime,
+          element: lap,
+          interval: lInterval,
+        };
+        laps.push(lapData);
+        updateFastestAndSlowestLaps();
+      }
 
-            lapButton.addEventListener('click', () => {
-                lapInterval()
-            })
+      function updateFastestAndSlowestLaps() {
+        
 
-            resetButton.addEventListener('click', () => {
-                resetTimer()
-            })
+        const validLaps = laps.filter((l) => l.time > 0).slice(0, -1)
+        if (validLaps.length === 0) return;
+
+        let fastestLap = validLaps.reduce(
+          (min, curr) => (curr.time < min.time ? curr : min),
+          validLaps[2]
+        );
+        let slowestLap = validLaps.reduce(
+          (max, curr) => (curr.time > max.time ? curr : max),
+          validLaps[2]
+        );
+
+        laps.forEach((l) => {
+          l.element.style.color = "white";
+        });
+        fastestLap.element.style.color = "rgb(83, 216, 83)";
+        slowestLap.element.style.color = "rgb(187, 59, 59)";
+      }
+
+      function resetTimer() {
+        clearInterval(timerInterval);
+        stopInterval();
+        stopwatches.innerHTML = "";
+        laps = [];
+        lIntervals = [];
+        minutes = 0;
+        seconds = 0;
+        milliseconds = 0;
+        timerInterval = null;
+        swatch();
+      }
+
+      startButton.addEventListener("click", () => {
+        timeInterval();
+        startButton.style.display = "none";
+        stopButton.style.display = "inline-block";
+      });
+
+      stopButton.addEventListener("click", () => {
+        stopInterval();
+        clearInterval(timerInterval);
+        stopButton.style.display = "none";
+        startButton.style.display = "inline-block";
+        lapButton.style.display = "none";
+        resetButton.style.display = "inline-block";
+      });
+
+      lapButton.addEventListener("click", () => {
+        stopInterval();
+        lapInterval();
+        lapButton.style.display = "inline-block";
+        resetButton.style.display = "none";
+      });
+
+      resetButton.addEventListener("click", () => {
+        resetTimer();
+        resetButton.style.display = "none";
+        lapButton.style.display = "inline-block";
+      });
     </script>
-</body>
+  </body>
 </html>
+//find, every, some, filter, forEach, includes, indexOf, map, pop, push, reduce, slice, some, reverse, splice - daysArray
+//Array.from, Array.isArray
+//Object.freeze, Object.keys, Object.values, Object.entries, hasOwnProperty

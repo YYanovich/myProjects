@@ -1,0 +1,88 @@
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    background-color: black;
+    min-height: 100vh;
+    padding: 2rem;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-weight: 100;
+}
+.stopwatch_container {
+    margin-bottom: 7rem;
+    align-items: center;
+    flex-direction: column;
+    display: flex;
+}
+.stopwatch {
+    margin-top: 10rem;
+    font-size: 6rem;
+
+}
+.stopwatches {
+        margin-top: -2rem;
+        padding: 1rem;
+        width: 100%;
+        text-align: center;
+        font-size: 2rem;
+    }
+.stopwatch_buttons {
+    display: flex;
+    gap: 2rem;
+}
+.start {
+    position: absolute;
+    margin-left: 6rem;
+    border-radius: 50%;
+    height: 5rem;
+    width: 5rem;
+    color: rgb(90, 196, 90);
+    background-color: rgba(2, 63, 2, 0.793);
+    font-size: medium;
+    border: none;
+}
+.stop {
+    position: absolute;
+    margin-left: 6rem;
+    display: none;
+    border-radius: 50%;
+    height: 5rem;
+    width: 5rem;
+    background-color: rgba(148, 32, 32, 0.48);
+    color: rgb(255, 0, 0);
+    font-size: medium;
+    border: none;
+
+}
+.lap {
+    position: absolute;
+    margin-left: -11rem;
+    margin-bottom: 15rem;
+    border-radius: 50%;
+    height: 5rem;
+    width: 5rem;
+    gap: 5rem;
+    background-color: rgba(127, 126, 126, 0.63);
+    color: #fff;
+    font-size: medium;
+    border: none
+}
+.reset {
+    position: absolute;
+    margin-left: -11rem;
+    margin-bottom: 15rem;
+    display: none;
+    border-radius: 50%;
+    height: 5rem;
+    width: 5rem;
+    background-color: rgba(127, 126, 126, 0.63);
+    color: #fff;
+    font-size: medium;
+    border: none
+}
+.line {
+    width: 30%;
+    border: 1px solid white;
+}
+
