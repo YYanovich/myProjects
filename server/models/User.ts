@@ -1,23 +1,30 @@
-const mongoose = require('mongoose')
+import mongoose from "mongoose";
 
-const UserSchema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true,
-        unique: true, 
-        minlength: 2,
+const userSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  refreshTokens: [{
+    token: {
+      type: String,
+      required: true
     },
-    password: {
-        type: String,
-        minlength: 4,
-        required: true,
-    },
-    refreshToken: {
-        type: String,
-        default: "",
-    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
+}, {
+  timestamps: true
 });
-module.exports = mongoose.model('User', UserSchema)
+
+export default mongoose.model("User", userSchema);
 
 //🔹 1. const mongoose = require("mongoose");
 // require("mongoose") — це підключення бібліотеки Mongoose, яка допомагає працювати з базою даних MongoDB у зручний спосіб.
