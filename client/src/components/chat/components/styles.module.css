@@ -5,16 +5,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
+  padding-top: 25rem;
+  gap: 10px;
 }
 .h2 {
-  color: #fff;
-  display: flex;
-    padding-left: 2rem;
-
+  color: #fff
 }
-.input {
+.input{
   width: 15rem;
   height: 2rem;
   background-color: #2f2b2b;
@@ -22,16 +19,15 @@
   border-color: #fff;
   caret-color: rgb(255, 255, 255);
   color: #fff;
-  margin-right: 10px;
-  margin-left: 5px;
+
 }
 .input:focus {
   outline: none;
 }
 .input::placeholder {
-  color: #aaa;
-  opacity: 1;
-  font-style: italic;
+  color: #aaa;      
+  opacity: 1;       
+  font-style: italic; 
 }
 
 .homeBtn {
@@ -39,10 +35,8 @@
   background-color: rgb(223, 60, 60);
   color: #fff;
   width: 7rem;
-  border: none;
-  border-radius: 13px;
 }
-.homeBtn:hover {
+.homeBtn:hover{
   background-color: rgb(50, 190, 62);
 }
 .chat {
@@ -84,22 +78,6 @@
   color: black;
 }
 .homeBtn {
-  margin-top: 70px;
+  margin-top: 10px;
   padding: 10px 20px;
-}
-.registerBtn {
-  padding-top: 20px;
-  padding: 10px 20px;
-  background-color: rgb(50, 190, 62);
-  border-radius: 13px;
-  border: none;
-  margin-right: 1rem;
-}
-.headerHome {
-  display: flex;                  /* вирівнює в один ряд */
-  justify-content: space-between; /* розводить по краях */
-  align-items: center;           /* вирівнює по вертикалі */
-  box-sizing: border-box;        /* щоб padding не порушував ширину */
-  gap: 4rem;
-  padding-left: 2rem;
 }

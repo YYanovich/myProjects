@@ -1,11 +1,10 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-interface IUIState {
-  isDark: boolean;
-}
+const user = localStorage.getItem("user");
+const savedTheme = user ? localStorage.getItem(`theme_${user}`) : null;
 
-const initialState: IUIState = {
-  isDark: false,
+const initialState = {
+  isDark: savedTheme ? savedTheme === "dark" : false, // дефолт - світла
 };
 
 const uiSlice = createSlice({
