@@ -44,20 +44,15 @@ io.on("connection", (socket) => {
 
   console.log(`${username} (${socket.id}) підключився`);
 
-  // 1. Видаляємо попередні з'єднання цього ж користувача (якщо є)
   users = users.filter((user) => user.username !== username);
-  // 2. Додаємо нове, актуальне з'єднання
   users.push({ username, socketID: socket.id });
 
-  // 3. Відправляємо всім оновлений список
   io.emit("responseNewUser", users);
 
-  // Обробник для запиту поточного списку користувачів
   socket.on("getUsers", () => {
     socket.emit("usersList", users);
   });
 
-  // Обробка повідомлень
   socket.on("message", (data) => {
     if (!data.text) return;
     const message = {
@@ -69,17 +64,13 @@ io.on("connection", (socket) => {
     io.emit("response", message);
   });
 
-  // Обробка друкування
   socket.on("typing", () => {
     socket.broadcast.emit("responseTyping", `${username} is typing`);
   });
 
-  // Обробка відключення
   socket.on("disconnect", () => {
     console.log(`${username} (${socket.id}) відключився`);
-    // Просто видаляємо користувача за ID сокета, який відключився
     users = users.filter((user) => user.socketID !== socket.id);
-    // І знову відправляємо всім оновлений список
     io.emit("responseNewUser", users);
   });
 });

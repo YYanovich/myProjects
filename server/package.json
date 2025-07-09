@@ -19,7 +19,7 @@
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "nodemon --watch './**/*.ts' --exec 'ts-node' services/index.ts"
   },
   "name": "server",
   "version": "1.0.0",

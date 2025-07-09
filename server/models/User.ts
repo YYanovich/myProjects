@@ -1,30 +1,29 @@
-import mongoose from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
-const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  refreshTokens: [{
-    token: {
-      type: String,
-      required: true
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
+interface RefreshToken {
+  token: string;
+  createdAt?: Date;
+}
+
+interface IUser extends Document {
+  username: string;
+  password: string;
+  refreshToken: RefreshToken;
+}
+
+const userSchema = new Schema<IUser>(
+  {
+    username: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    refreshToken: {
+      token: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now },
     }
-  }]
-}, {
-  timestamps: true
-});
+  },
+  { timestamps: true }
+);
 
-export default mongoose.model("User", userSchema);
+export default mongoose.model<IUser>("User", userSchema);
 
 //🔹 1. const mongoose = require("mongoose");
 // require("mongoose") — це підключення бібліотеки Mongoose, яка допомагає працювати з базою даних MongoDB у зручний спосіб.
@@ -34,7 +33,6 @@ export default mongoose.model("User", userSchema);
 
 // Детальніше:
 // new mongoose.Schema({...}) — викликаємо клас Schema з mongoose і передаємо йому об'єкт з описом полів.
-
 
 // 🔹 3. Останній рядок:
 
@@ -49,4 +47,3 @@ export default mongoose.model("User", userSchema);
 // UserSchema — наша схема, яка описує, як виглядає один "user".
 
 // 📦 module.exports = ... — ми експортуємо модель, щоб потім підключати її в інших файлах і писати:
-

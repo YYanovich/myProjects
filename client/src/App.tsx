@@ -3,6 +3,8 @@ import { io, Socket } from "socket.io-client";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./components/home/home";
 import ChatPage from "./components/chat/index";
+import AllUsers from "./components/users/AllUsers";
+import ProtectedRoute from "./ProtectedRoute";
 import { useAppSelector } from "./store/hooks";
 import { useEffect, useState } from "react";
 
@@ -21,7 +23,7 @@ export default function App() {
 
     console.log("Створюємо новий сокет з токеном...");
     const newSocket = io("http://localhost:5001", {
-      auth: { token }, 
+      auth: { token },
     });
 
     setSocket(newSocket);
@@ -30,7 +32,7 @@ export default function App() {
       console.log("Відключаємо старий сокет...");
       newSocket.disconnect();
     };
-  }, [token]); 
+  }, [token]);
 
   return (
     <Routes>
@@ -38,11 +40,17 @@ export default function App() {
       <Route
         path="/chat"
         element={
-          socket ? (
-            <ChatPage socket={socket} />
-          ) : (
-            <Navigate to="/" replace />
-          )
+          <ProtectedRoute>
+            <ChatPage socket={socket!} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <AllUsers />
+          </ProtectedRoute>
         }
       />
     </Routes>

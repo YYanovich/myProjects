@@ -34,16 +34,17 @@ export default function ChatPage({ socket }: IChatPageProps) {
   const { themeStyles } = useTheme();
   const [messages, setMessages] = useState<any[]>([]);
   const [status, setStatus] = useState<string>("");
-  const username = useAppSelector((state) => state.auth.username)
+  const username = useAppSelector((state) => state.auth.username);
 
   useEffect(() => {
-    if(username) {
-      socket.emit("newUser", {user: username, socketID: socket.id})
+    if (!socket) return;
+    if (username) {
+      socket.emit("newUser", { user: username, socketID: socket.id });
     }
-
   }, [socket, username]);
 
   useEffect(() => {
+    if (!socket) return;
     const handleResponse = (data: any) => {
       setMessages((prevMessages) => [...prevMessages, data]);
     };
@@ -58,6 +59,7 @@ export default function ChatPage({ socket }: IChatPageProps) {
   }, [socket]);
 
   useEffect(() => {
+    if (!socket) return;
     const handleResponseTyping = (data: string) => {
       setStatus(data);
       setTimeout(() => setStatus(""), 1000);
