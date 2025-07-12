@@ -6,9 +6,10 @@ import {
   Typography,
   TextField,
   Box,
+  Pagination,
 } from "@mui/material";
-import { useTheme, useAppSelector } from "../../store/hooks";
-
+import { useTheme, useAppSelector } from "../../../../store/hooks";
+import { useNavigate } from "react-router-dom";
 interface User {
   _id: string;
   username: string;
@@ -19,36 +20,65 @@ export default function AllUsers() {
   const token = useAppSelector((state) => state.auth.accessToken);
 
   const [users, setUsers] = useState<User[]>([]);
-  const [searchText, setSearchText] = useState("");
+  const [inputValue, setInputValue] = useState("");
+  const [debouncedInputValue, setDebouncedInputValue] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch("http://localhost:5001/users", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(
+          `http://localhost:5001/users?page=${currentPage}&limit=10&search=${debouncedInputValue}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error("Не вдалося завантажити користувачів");
         }
 
-        const data: User[] = await response.json();
-        setUsers(data);
+        const data = await response.json();
+        setUsers(Array.isArray(data.users) ? data.users : []);
+        setTotalPages(data.totalPages || 0);
       } catch (error) {
         console.error("Помилка завантаження:", error);
+        setUsers([]);
       }
     };
 
     if (token) {
       fetchUsers();
     }
-  }, [token]);
+  }, [token, currentPage, debouncedInputValue]);
 
-  const filteredUsers = users.filter((user) =>
-    user.username.toLowerCase().includes(searchText.toLowerCase())
-  );
+  useEffect(() => {
+    const debouncedTimer = setTimeout(() => {
+      setDebouncedInputValue(inputValue);
+      setCurrentPage(1);
+    }, 500);
+
+    return () => {
+      clearTimeout(debouncedTimer);
+    };
+  }, [inputValue]);
+
+  const navigate = useNavigate();
+
+  const handleUserClick = (userID: string, username: string) => {
+    console.log(`Обрано користувача ${username} з ID ${userID}`);
+    navigate(`/chat/${userID}`);
+  };
+
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    value: number
+  ) => {
+    setCurrentPage(value);
+  };
 
   return (
     <Box
@@ -59,7 +89,7 @@ export default function AllUsers() {
         background: themeStyles.background,
         color: themeStyles.textColor,
         boxSizing: "border-box",
-        pl:25
+        pl: 25,
       }}
     >
       <Box
@@ -69,17 +99,17 @@ export default function AllUsers() {
           flexDirection: "column",
           alignItems: "center",
           gap: 2,
-          pl: 55
+          pl: 55,
         }}
       >
         <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-         Користувачі
+          Користувачі
         </Typography>
 
         <TextField
           label="Пошук користувачів"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
           fullWidth
           variant="outlined"
           sx={{
@@ -106,8 +136,9 @@ export default function AllUsers() {
         />
 
         <List sx={{ width: "100%" }}>
-          {filteredUsers.map((user) => (
+          {users.map((user) => (
             <ListItem
+              onClick={() => handleUserClick(user._id, user.username)}
               key={user._id}
               sx={{
                 bgcolor: themeStyles.paperBg,
@@ -126,6 +157,11 @@ export default function AllUsers() {
             </ListItem>
           ))}
         </List>
+        <Pagination
+          count={totalPages}
+          page={currentPage}
+          onChange={handlePageChange}
+        ></Pagination>
       </Box>
     </Box>
   );

@@ -3,7 +3,8 @@ import { io, Socket } from "socket.io-client";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./components/home/home";
 import ChatPage from "./components/chat/index";
-import AllUsers from "./components/users/AllUsers";
+import AllUsers from "./components/chat/components/users/AllUsers";
+import UserChatPage from "./components/chat/components/userChatPage/UserChatPage"
 import ProtectedRoute from "./ProtectedRoute";
 import { useAppSelector } from "./store/hooks";
 import { useEffect, useState } from "react";
@@ -52,6 +53,14 @@ export default function App() {
             <AllUsers />
           </ProtectedRoute>
         }
+      />
+      <Route
+      path="/chat/:userID"
+      element={
+        <ProtectedRoute>
+          <UserChatPage socket={socket!}/>
+        </ProtectedRoute>
+      }
       />
     </Routes>
   );

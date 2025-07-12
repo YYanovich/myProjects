@@ -5,7 +5,7 @@ interface RefreshToken {
   createdAt?: Date;
 }
 
-interface IUser extends Document {
+export interface IUser extends Document {
   username: string;
   password: string;
   refreshToken: RefreshToken;
