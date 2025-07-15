@@ -3,11 +3,90 @@ import cors from "cors";
 import mongoose from "mongoose";
 import http from "http";
 import { Server } from "socket.io";
-import router from "../controllers/ChatRoutes.ts";
+import router from "../controllers/ChatRoutes";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import User from "../models/User";
+import Message from "../models/Message"; // 👈 1. Імпортуємо вашу модель
 
+// --- Секретні ключі ---
 const ACCESS_SECRET = "access_secret_key";
+const REFRESH_SECRET = "refresh_secret_key";
 
+// --- Логіка роботи з користувачами та токенами ---
+export const registerUser = async (username: string, password: string) => {
+  const existing = await User.findOne({ username });
+  if (existing) throw new Error("Користувач вже існує");
+
+  const hashedPass = await bcrypt.hash(password, 10);
+  const newUser = new User({ username, password: hashedPass });
+  await newUser.save();
+
+  const accessToken = jwt.sign({ id: newUser._id, username }, ACCESS_SECRET, {
+    expiresIn: "15m",
+  });
+  const refreshToken = jwt.sign({ id: newUser._id, username }, REFRESH_SECRET, {
+    expiresIn: "7d",
+  });
+
+  newUser.refreshToken = { token: refreshToken, createdAt: new Date() };
+  await newUser.save();
+
+  return { accessToken, refreshToken, username };
+};
+
+export const loginUser = async (username: string, password: string) => {
+  const user = await User.findOne({ username });
+  if (!user) throw new Error("Користувача не знайдено");
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) throw new Error("Невірний пароль");
+
+  const accessToken = jwt.sign({ id: user._id, username }, ACCESS_SECRET, {
+    expiresIn: "15m",
+  });
+  const refreshToken = jwt.sign({ id: user._id, username }, REFRESH_SECRET, {
+    expiresIn: "7d",
+  });
+
+  user.refreshToken = { token: refreshToken, createdAt: new Date() };
+  await user.save();
+
+  return { accessToken, refreshToken, username };
+};
+
+export const refreshAccessToken = async (refreshToken: string) => {
+  try {
+    const decoded = jwt.verify(refreshToken, REFRESH_SECRET);
+
+    //  перевірка типу для decoded
+    if (typeof decoded !== "object" || !("id" in decoded)) {
+      throw new Error("Некоректний формат токена");
+    }
+
+    const user = await User.findOne({ _id: decoded.id }); // шукаємо по _id, так надійніше
+
+    if (!user) throw new Error("Користувача не знайдено");
+
+    if (!user.refreshToken || user.refreshToken.token !== refreshToken) {
+      throw new Error("Недійсний refresh token");
+    }
+
+    // Кладемо в новий токен і id, і username
+    const newAccessToken = jwt.sign(
+      { id: user._id, username: user.username },
+      ACCESS_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    return { accessToken: newAccessToken };
+  } catch (error) {
+    // Перекидаємо помилку далі, щоб її можна було зловити в ChatRoutes
+    throw new Error("Недійсний або прострочений refresh token");
+  }
+};
+
+// --- Налаштування сервера ---
 const app = express();
 const PORT = 5001;
 
@@ -25,27 +104,39 @@ io.use((socket, next) => {
   if (!token) return next(new Error("Необхідна авторизація"));
 
   try {
-    const decoded = jwt.verify(token, ACCESS_SECRET) as { username: string };
-    socket.data.user = decoded;
-    next();
+    const decoded = jwt.verify(token, ACCESS_SECRET);
+
+    // І тут додаємо таку ж перевірку
+    if (typeof decoded === "object" && "username" in decoded) {
+      socket.data.user = decoded;
+      next();
+    } else {
+      next(new Error("Некоректний формат токена"));
+    }
   } catch (err) {
     next(new Error("Недійсний токен"));
   }
 });
 
-let users: { username: string; socketID: string }[] = [];
+// 👇 КРОК 1: Оновлюємо тип масиву, додаємо поле 'id'
+let users: { id: string; username: string; socketID: string }[] = [];
 
 io.on("connection", (socket) => {
+  // 👇 КРОК 2: Дістаємо і ID, і username з даних сокета
+  const userId = socket.data.user?.id;
   const username = socket.data.user?.username;
 
-  if (!username) {
+  // Перевіряємо, чи є обидва поля
+  if (!userId || !username) {
     return socket.disconnect();
   }
 
   console.log(`${username} (${socket.id}) підключився`);
 
-  users = users.filter((user) => user.username !== username);
-  users.push({ username, socketID: socket.id });
+  // Прибираємо старий запис цього користувача (якщо він перезаходить)
+  users = users.filter((user) => user.id !== userId);
+  // Додаємо новий запис з усіма трьома полями
+  users.push({ id: userId, username, socketID: socket.id });
 
   io.emit("responseNewUser", users);
 
@@ -64,14 +155,59 @@ io.on("connection", (socket) => {
     io.emit("response", message);
   });
 
+  // ЗАМІНІТЬ ВАШ ПОТОЧНИЙ ОБРОБНИК НА ЦЕЙ:
+  socket.on("private_message", async (messagePayload) => {
+    try {
+      // 2. Отримуємо дані з "посилки" від клієнта
+      const { content, to: receiverId } = messagePayload;
+      const senderId = socket.data.user.id;
+
+      // 3. Перевіряємо, чи є всі дані
+      if (!content || !receiverId) {
+        console.error("Помилка: відсутній текст або одержувач.");
+        return;
+      }
+
+      // 4. Створюємо і зберігаємо повідомлення в базі даних
+      const newMessage = new Message({
+        sender: senderId,
+        receiver: receiverId,
+        content: content,
+      });
+      const savedMessage = await newMessage.save();
+
+      // 5. Знаходимо сокет одержувача, щоб відправити йому повідомлення
+      const receiverSocket = users.find((user) => user.id === receiverId);
+
+      // 6. Відправляємо збережене повідомлення (з _id і createdAt) назад собі
+      io.to(socket.id).emit("new_message", savedMessage);
+
+      // 7. Якщо одержувач онлайн, відправляємо повідомлення і йому
+      if (receiverSocket) {
+        io.to(receiverSocket.socketID).emit("new_message", savedMessage);
+      }
+    } catch (error) {
+      console.error("Помилка при обробці приватного повідомлення:", error);
+    }
+  });
+
   socket.on("typing", () => {
     socket.broadcast.emit("responseTyping", `${username} is typing`);
   });
 
   socket.on("disconnect", () => {
-    console.log(`${username} (${socket.id}) відключився`);
-    users = users.filter((user) => user.socketID !== socket.id);
-    io.emit("responseNewUser", users);
+    // 👇 Беремо дані з сокета, що відключається
+    const disconnectedUser = socket.data.user;
+
+    // Перевіряємо, чи були дані про користувача
+    if (disconnectedUser) {
+      console.log(`${disconnectedUser.username} (${socket.id}) відключився`);
+      // Фільтруємо по унікальному ID користувача, а не по socketID, це надійніше
+      users = users.filter((user) => user.id !== disconnectedUser.id);
+      io.emit("responseNewUser", users);
+    } else {
+      console.log(`Невідомий користувач (${socket.id}) відключився`);
+    }
   });
 });
 
@@ -94,114 +230,3 @@ mongoose
 server.listen(PORT, () => {
   console.log(`Server is working on port ${PORT}`);
 });
-
-//reg/log/tokens
-
-import bcrypt from "bcrypt";
-import User from "../models/User.ts";
-type Request = express.Request;
-type Response = express.Response;
-
-const REFRESH_SECRET = "refresh_secret_key";
-
-export const registerUser = async (username: string, password: string) => {
-  const existing = await User.findOne({ username });
-  if (existing) throw new Error("Користувач вже існує");
-
-  const hashedPass = await bcrypt.hash(password, 10);
-  const accessToken = jwt.sign({ username }, ACCESS_SECRET, {
-    expiresIn: "15m",
-  });
-  const refreshToken = jwt.sign({ username }, REFRESH_SECRET, {
-    expiresIn: "7d",
-  });
-
-  const newUser = new User({
-    username,
-    password: hashedPass,
-    refreshToken: {
-      token: refreshToken,
-      createdAt: new Date(),
-    },
-  });
-  await newUser.save();
-
-  return { accessToken, refreshToken, username };
-};
-
-export const loginUser = async (username: string, password: string) => {
-  const user = await User.findOne({ username });
-  if (!user) throw new Error("Користувача не знайдено");
-
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) throw new Error("Невірний пароль");
-
-  const accessToken = jwt.sign({ username }, ACCESS_SECRET, {
-    expiresIn: "15m",
-  });
-  const refreshToken = jwt.sign({ username }, REFRESH_SECRET, {
-    expiresIn: "7d",
-  });
-
-  user.refreshToken = {
-    token: refreshToken,
-    createdAt: new Date(),
-  };
-  await user.save();
-
-  return { accessToken, refreshToken, username };
-};
-
-export const register = async (req: Request, res: Response) => {
-  const { username, password } = req.body;
-  try {
-    const result = await registerUser(username, password);
-    res.status(201).json({ message: "Реєстрація успішна", ...result });
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-export const login = async (req: Request, res: Response) => {
-  const { username, password } = req.body;
-  try {
-    const result = await loginUser(username, password);
-    res.status(200).json({ message: "Успішний вхід", ...result });
-  } catch (err: any) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Login error:", message);
-
-    if (
-      message === "Користувача не знайдено" ||
-      message === "Невірний пароль"
-    ) {
-      res.status(401).json({ error: message });
-    } else {
-      res.status(500).json({ error: "Внутрішня помилка сервера" });
-    }
-  }
-};
-
-export const refreshAccessToken = async (refreshToken: string) => {
-  try {
-    const decoded = jwt.verify(refreshToken, REFRESH_SECRET) as {
-      username: string;
-    };
-    const user = await User.findOne({ username: decoded.username });
-
-    if (!user) throw new Error("Користувача не знайдено");
-
-    if (!user.refreshToken || user.refreshToken.token !== refreshToken) {
-      throw new Error("Недійсний refresh token");
-    }
-    const newAccessToken = jwt.sign(
-      { username: decoded.username },
-      ACCESS_SECRET,
-      { expiresIn: "15m" }
-    );
-
-    return { accessToken: newAccessToken };
-  } catch (error) {
-    throw new Error("Недійсний refresh token");
-  }
-};
