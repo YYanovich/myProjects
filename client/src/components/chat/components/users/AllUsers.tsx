@@ -10,22 +10,33 @@ import {
 } from "@mui/material";
 import { useTheme, useAppSelector } from "../../../../store/hooks";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+
 interface User {
   _id: string;
   username: string;
 }
-
-export default function AllUsers() {
+interface ISearch {
+  search: string;
+}
+//"?" - значить шо він не обов'язковий
+//                  ||
+//                  \/
+export default function AllUsers({ isSidebar }: { isSidebar?: boolean }) {
   const { themeStyles } = useTheme();
   const token = useAppSelector((state) => state.auth.accessToken);
 
   const [users, setUsers] = useState<User[]>([]);
-  const [inputValue, setInputValue] = useState("");
+  // const [inputValue, setInputValue] = useState(""); без react-hook-form
   const [debouncedInputValue, setDebouncedInputValue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
 
+  const { register, watch } = useForm<ISearch>(); //з react-hook-form
+  const currentSearchValue = watch("search"); //з react-hook-form
+
   useEffect(() => {
+    //отримуємо дані з сервер та використовуємо їх на фронтенді
     const fetchUsers = async () => {
       try {
         const response = await fetch(
@@ -42,7 +53,8 @@ export default function AllUsers() {
         }
 
         const data = await response.json();
-        setUsers(Array.isArray(data.users) ? data.users : []);
+        setUsers(Array.isArray(data.users) ? data.users : []); //перевіряємо чи є дані з data масивом бо якщо ні
+        //то просто буде пустий масив шоб map коректно працювало
         setTotalPages(data.totalPages || 0);
       } catch (error) {
         console.error("Помилка завантаження:", error);
@@ -56,24 +68,27 @@ export default function AllUsers() {
   }, [token, currentPage, debouncedInputValue]);
 
   useEffect(() => {
+    //дебаунс для оптимізації
     const debouncedTimer = setTimeout(() => {
-      setDebouncedInputValue(inputValue);
+      setDebouncedInputValue(currentSearchValue);
       setCurrentPage(1);
     }, 500);
 
     return () => {
       clearTimeout(debouncedTimer);
     };
-  }, [inputValue]);
+  }, [currentSearchValue]);
 
-  const navigate = useNavigate();
+  const navigate = useNavigate(); //для безшовного перехожу без перезавнтаження
 
   const handleUserClick = (userID: string, username: string) => {
+    //обробник для переходу на сторінку користувача
     console.log(`Обрано користувача ${username} з ID ${userID}`);
     navigate(`/chat/${userID}`);
   };
 
   const handlePageChange = (
+    //обробник для зміни сторінок
     event: React.ChangeEvent<unknown>,
     value: number
   ) => {
@@ -83,33 +98,51 @@ export default function AllUsers() {
   return (
     <Box
       sx={{
-        minWidth: "107rem",
-        minHeight: "100vh",
-        p: 3,
-        background: themeStyles.background,
-        color: themeStyles.textColor,
-        boxSizing: "border-box",
-        pl: 25,
+        ...(isSidebar
+          ? {
+              p: 2,
+              minHeight: "95vh",
+              overflowY: "auto",
+              background: themeStyles.background,
+              color: themeStyles.textColor,
+              pt: 4,
+            }
+          : {
+              minWidth: "107rem",
+              minHeight: "100vh",
+              p: 3,
+              background: themeStyles.background,
+              color: themeStyles.textColor,
+              boxSizing: "border-box",
+              pl: 25,
+            }),
       }}
     >
       <Box
         sx={{
-          maxWidth: "500px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 2,
-          pl: 55,
+          ...(isSidebar
+            ? {
+                width: "100%",
+              }
+            : {
+                maxWidth: "500px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
+                pl: 55,
+              }),
         }}
       >
         <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-          Користувачі
+          {isSidebar ? "Чати" : "Користувачі"}
         </Typography>
 
         <TextField
           label="Пошук користувачів"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          // value={inputValue}                               без react-hook-form
+          // onChange={(e) => setInputValue(e.target.value)}  без react-hook-form
+          {...register("search")} //з react-hook-form
           fullWidth
           variant="outlined"
           sx={{
@@ -135,7 +168,7 @@ export default function AllUsers() {
           }}
         />
 
-        <List sx={{ width: "100%" }}>
+        <List sx={isSidebar ? { width: "100%", top: 12 } : { width: "100%" }}>
           {users.map((user) => (
             <ListItem
               onClick={() => handleUserClick(user._id, user.username)}
@@ -144,7 +177,7 @@ export default function AllUsers() {
                 bgcolor: themeStyles.paperBg,
                 border: `1px solid ${themeStyles.inputBg}`,
                 borderRadius: "8px",
-                mb: 1,
+                mb: 2.5,
                 cursor: "pointer",
                 "&:hover": {
                   bgcolor: themeStyles.primaryColor,
@@ -158,6 +191,24 @@ export default function AllUsers() {
           ))}
         </List>
         <Pagination
+          sx={
+            isSidebar
+              ? {
+                  mt: "auto",
+                  pt: 5.5, 
+                  alignSelf: "center",
+                  ml: 7.4,
+                  // Ми звертаємось до всіх дочірніх елементів з класом MuiPaginationItem-root
+                  "& .MuiPaginationItem-root": {
+                    color: themeStyles.textColor,
+                  }, 
+                }
+              : { 
+                  "& .MuiPaginationItem-root": {
+                    color: themeStyles.textColor,
+                  },
+                }
+          }
           count={totalPages}
           page={currentPage}
           onChange={handlePageChange}

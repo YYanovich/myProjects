@@ -6,9 +6,8 @@ interface IAuthState {
   accessToken: string;
 }
 
-// Спробуємо ініціалізувати стан з localStorage
 const initialState: IAuthState = {
-  username: "", // Ми не можемо надійно зберігати username, його треба брати з токена
+  username: "", 
   isAuth: !!localStorage.getItem("token"),
   accessToken: localStorage.getItem("token") || "",
 };
@@ -31,7 +30,6 @@ const authSlice = createSlice({
       state.username = "";
       state.accessToken = "";
       state.isAuth = false;
-      // ЦЕ НАЙВАЖЛИВІШИЙ РЯДОК!
       localStorage.removeItem("token");
     },
   },

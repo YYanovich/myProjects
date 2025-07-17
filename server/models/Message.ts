@@ -12,7 +12,9 @@ export interface IMessage extends Document {
 const messageSchema: Schema = new Schema(
   {
     sender: {
-      type: Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId, //У цьому полі ми будемо зберігати не все ім'я користувача, 
+                                  // а тільки його унікальний ідентифікатор (ID) з бази даних". 
+                                  // Це як записати унікальний номер контакту.
       ref: "User", // Посилання на модель User
       required: true,
     },

@@ -6,6 +6,7 @@ import SendIcon from "@mui/icons-material/Send";
 import { jwtDecode } from "jwt-decode";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Socket } from "socket.io-client";
+import { useTheme } from "../../../../store/hooks";
 
 interface IMessage {
   _id: string;
@@ -32,10 +33,11 @@ export default function UserChatPage({ socket }: { socket: Socket }) {
   //  а бібліотека jwt decode бере з токена дані по типу id не ламаючи печатку в кінці.
   const currentUserId = token ? (jwtDecode(token) as DecodedToken).id : null;
 
+  const { themeStyles } = useTheme();
   const { register, handleSubmit, reset } = useForm<IFormInput>();
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
-  //   const [newMessage, setNewMessage] = useState("");
+  //   const [newMessage, setNewMessage] = useState(""); //без біліотеки react-hook-form
   // АВТОРИЗАЦІЯ
   useEffect(() => {
     const fetchMessages = async () => {
@@ -63,7 +65,8 @@ export default function UserChatPage({ socket }: { socket: Socket }) {
     if (!socket) return;
 
     const handleNewMessage = (newMessage: IMessage) => {
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
+      setMessages((prevMessages) => [...prevMessages, newMessage]); // стаивить у ...prevMessages попередні message,
+      //  які були і плюс показує нові
     };
 
     socket.on("new_message", handleNewMessage);
@@ -71,7 +74,7 @@ export default function UserChatPage({ socket }: { socket: Socket }) {
     return () => {
       socket.off("new_message", handleNewMessage);
     };
-  }, [socket]); 
+  }, [socket]);
   /// ВІДПРАВКА без react-hook-form
   //   const handleSendMessage = (e: React.FormEvent) => {
   //     e.preventDefault(); /// без перезавантаження
@@ -105,11 +108,14 @@ export default function UserChatPage({ socket }: { socket: Socket }) {
         p: 3,
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 64px)",
+        height: "101.5%",
+        width: "143%",
+        background: themeStyles.background,
+        color: themeStyles.textColor,
       }}
     >
       <Typography variant="h4">Чат з користувачем</Typography>
-      <Paper
+      <Box
         sx={{
           mt: 2,
           p: 2,
@@ -117,7 +123,7 @@ export default function UserChatPage({ socket }: { socket: Socket }) {
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#f0f2f5",
+          background: themeStyles.background,
         }}
       >
         {messages.map((msg) => {
@@ -163,22 +169,57 @@ export default function UserChatPage({ socket }: { socket: Socket }) {
             </Box>
           );
         })}
-      </Paper>
+      </Box>
       {/* Поле вводу нового повідомлення */}
       <Box
         component="form"
         onSubmit={handleSubmit(handleSendMessage)}
-        sx={{ mt: 2, display: "flex", alignItems: "center" }}
+        sx={{
+          // 👇 Ось тут ми додаємо стилі для рамки
+          backgroundColor: themeStyles.paperBg, // Колір фону для самої рамки
+          borderRadius: "15px", // Заокруглюємо кути рамки
+          mt: 2,
+          display: "flex",
+          alignItems: "center",
+        }}
       >
         <TextField
           fullWidth
           variant="outlined"
           placeholder="Напишіть повідомлення..."
           {...register("message", { required: true })}
-          sx={{ "& .MuiOutlinedInput-root": { borderRadius: "20px" } }}
+          sx={{
+            p: 2,
+            // 👇 Починаємо стилізувати з кореневого елемента інпуту
+            "& .MuiOutlinedInput-root": {
+              backgroundColor: themeStyles.inputBg, // Задаємо колір фону
+
+              // 👇 Повністю прибираємо рамку
+              "& fieldset": {
+                border: "none",
+              },
+              // Прибираємо рамку при наведенні
+              "&:hover fieldset": {
+                border: "none",
+              },
+              // Прибираємо рамку при фокусі
+              "&.Mui-focused fieldset": {
+                border: "none",
+              },
+            },
+            // Стилі для самого тексту, що вводиться
+            "& .MuiInputBase-input": {
+              color: themeStyles.inputColor,
+            },
+            // Стилі для плейсхолдера
+            "& .MuiInputBase-input::placeholder": {
+              color: themeStyles.helperColor,
+              opacity: 1,
+            },
+          }}
         />
         <IconButton type="submit" color="primary" sx={{ ml: 1 }}>
-          <SendIcon />
+          <SendIcon sx={{pr:2}}/>
         </IconButton>
       </Box>
     </Box>
